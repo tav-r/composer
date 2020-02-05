@@ -1,5 +1,4 @@
 /*TODO
- * - Write arbitrary data (bytes) to given location
  * - Check success on open, read and write
  * - Raise propper exceptions on fail
  * - Commenting/doc
