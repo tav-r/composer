@@ -57,8 +57,8 @@ class ELFFile:
         """
         Insert data at given position.
 
-        The data gets /inserted/ i.e. the data after the specified
-        offset is moved after the inserted data block.
+        The data is /inserted/ i.e. the data after the specifieid offset
+        is moved after the inserted data block.
 
         Args:
             offset (int): file offset to write data at
@@ -70,7 +70,7 @@ class ELFFile:
         """
         Insert data at given position.
 
-        The data at the given position gets overwritten.
+        The data at the given position is overwritten.
 
         Args:
             offset (int): file offset to write data at
@@ -84,7 +84,7 @@ class ELFFile:
         return os.path.getsize(self.__path)
 
 class Header(ABC):
-    """An abstract header"""
+    """An abstract header."""
 
     def __init__(self, path):
         self._path = path
