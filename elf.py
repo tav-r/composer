@@ -4,6 +4,7 @@ way on a low level.
 """
 
 from abc import ABC, abstractmethod
+import os
 import elf_handler
 
 E_HEADER_MEMBERS = {
@@ -63,7 +64,7 @@ class ELFFile:
             offset (int): file offset to write data at
             data (bytes): the data to write
         """
-        elf_handler.insert_bytes(self.__path, offset, data)
+        elf_handler.insert_bytes(self.__path, offset, data, overwrite=False)
 
     def overwrite_at(self, offset, data):
         """
@@ -77,6 +78,10 @@ class ELFFile:
         """
         elf_handler.insert_bytes(self.__path, offset, data, overwrite=True)
 
+    @property
+    def size(self):
+        """Size of ELF file."""
+        return os.path.getsize(self.__path)
 
 class Header(ABC):
     """An abstract header"""

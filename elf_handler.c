@@ -5,30 +5,7 @@
  * - Commenting/doc
  */
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-#include <errno.h>
-#include <elf.h>
-#include <stdio.h>
-#include <string.h>
-#include <fcntl.h>
-#include <assert.h>
-
-FILE *elf_file = NULL;
-
-Elf64_Ehdr*
-get_ehdr_data(const char *path)
-{
-    int elf_fd;
-    Elf64_Ehdr *hdr;
-
-    elf_fd = open(path, O_RDONLY);
-    hdr = malloc(sizeof(Elf64_Ehdr));
-    read(elf_fd, hdr, sizeof(Elf64_Ehdr));
-
-    close(elf_fd);
-	return hdr;
-}
+#include <elf_handler.h>
 
 static PyObject*
 read_elf_header(PyObject* self, PyObject *args) {
@@ -130,36 +107,6 @@ write_elf_header(PyObject* self, PyObject *args) {
     return Py_None;
 }
 
-long
-get_shdr_offset(char *path, int index) {
-	long offset;
-
-	Elf64_Ehdr* ehdr;
-	ehdr = get_ehdr_data(path);
-	offset = ehdr->e_shoff + ehdr->e_shentsize * index;
-	free(ehdr);
-
-	return offset;
-}
-
-Elf64_Shdr*
-get_shdr_data(char *path, int index) {
-	Elf64_Shdr* shdr;
-	long offset;
-	int elf_fd;
-	
-	offset = get_shdr_offset(path, index);
-
-	// read shdr data from file
-	elf_fd = open(path, O_RDONLY);
-	lseek(elf_fd, offset, SEEK_SET);
-	shdr = malloc(sizeof(Elf64_Shdr));
-	read(elf_fd, shdr, sizeof(Elf64_Shdr));
-	close(elf_fd);
-	
-	return shdr;
-}
-
 static PyObject*
 read_section_header(PyObject* self, PyObject* args)
 {
@@ -169,6 +116,7 @@ read_section_header(PyObject* self, PyObject* args)
 	int index;
 
 	if (!PyArg_ParseTuple(args, "ssi", &path, &member, &index)) {
+		puts("fail\n");
 		return NULL;
 	}
 
@@ -203,19 +151,6 @@ read_section_header(PyObject* self, PyObject* args)
 	return PyLong_FromLong(res);
 }
 
-ssize_t
-write_to_file(FILE *file, size_t offset, unsigned char *data, size_t size)
-{
-	ssize_t res;
-
-	// write given bytes to file
-	res = fseek(file, offset, SEEK_SET);
-	if (fwrite(data, 1, size, file) < 0) {
-		puts(strerror(errno));
-	}
-	return res;
-}
-
 static PyObject*
 insert_bytes(PyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -239,7 +174,7 @@ insert_bytes(PyObject *self, PyObject *args, PyObject *kwargs)
 	fseek(elff, 0L, SEEK_END);
 	filesz = ftell(elff);
 
-	assert(offset < filesz);
+	assert(offset <= filesz);
 
 	if (!overwrite) {
 			// store part after insertion block
@@ -311,36 +246,6 @@ write_section_header(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
-long
-get_phdr_offset(char *path, int index) {
-	long offset;
-
-	Elf64_Ehdr* ehdr;
-	ehdr = get_ehdr_data(path);
-	offset = ehdr->e_phoff + ehdr->e_phentsize * index;
-	free(ehdr);
-
-	return offset;
-}
-
-Elf64_Phdr*
-get_phdr_data(char *path, int index) {
-	Elf64_Phdr* phdr;
-	long offset;
-	int elf_fd;
-	
-	offset = get_phdr_offset(path, index);
-
-	// read shdr data from file
-	elf_fd = open(path, O_RDONLY);
-	lseek(elf_fd, offset, SEEK_SET);
-	phdr = malloc(sizeof(Elf64_Shdr));
-	read(elf_fd, phdr, sizeof(Elf64_Shdr));
-	close(elf_fd);
-	
-	return phdr;
-}
-
 static PyObject*
 read_program_header(PyObject* self, PyObject* args)
 {
@@ -409,7 +314,7 @@ write_program_header(PyObject* self, PyObject* args)
 		phdr->p_filesz = (uint64_t) data;
 	} else if (strcmp("p_memsz", member) == 0) {
 		phdr->p_memsz = (uint64_t) data;
-	} else if (strcmp("sh_align", member) == 0) {
+	} else if (strcmp("p_align", member) == 0) {
 		phdr->p_align = (uint64_t) data;;
 	} else {
 		return NULL;
