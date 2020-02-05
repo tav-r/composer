@@ -2,7 +2,7 @@
 This should become a collection of tools I wrote to tamper with ELF files.
 
 ## What is it?
-The goal the manipulation of ELF files easy in python. An example is `injector.py` which hijacks the
+The goal is to make the manipulation of ELF files easy in python. An example is `injector.py` which hijacks the
 execution flow of an ELF file by appending some shellcode to the file, modifying a PLT_NOTE segment
 header and setting the entry point to the injected shellcode.
 
