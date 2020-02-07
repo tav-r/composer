@@ -18,6 +18,8 @@ except IndexError:
     print("Usage: {} ELF_BINARY".format(sys.argv[0]))
     sys.exit(1)
 
+# this shellcode writes 'Hijacked!\n' to stdout and then exits with the return
+# value 1. It uses jmp-call-pop to be position independant
 CODE = b"\xeb\x22\x5e\x48\31\xff\x66\xbf\x01\x00\x48\x31\xc0\xb0\x01\x48\x31"\
        b"\xd2\xb2\x0b\x0f\x05\x48\x31\xc0\xb0\x3c\x48\x31\xd2\xb2\x01\xfe\xca"\
        b"\x0f\x05\xe8\xd9\xff\xff\xffHijacked!\x0a\x00"
