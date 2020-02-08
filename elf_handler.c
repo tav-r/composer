@@ -254,7 +254,7 @@ read_elf_header(PyObject* self, PyObject *args) {
         ret = hdr->e_shnum;
     } else if (strcmp("e_shstrndx", member) == 0) {
         ret = hdr->e_shstrndx;
-    } elshttps://www.leo.org/german-englishe {
+    } else {
         PyErr_SetString(PyExc_AttributeError, "ELF header has no such member");
         goto parse_fail;
     }
