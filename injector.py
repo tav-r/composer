@@ -29,7 +29,7 @@ try:
     SOME_NOTE_PHDR = [phdr for phdr in ELF_FILE.program_headers
                       if phdr.p_type == PT_NOTE].pop()
 except IndexError:
-    MSG = "No PT_NOTE segment fount in {}, exiting."
+    MSG = "No PT_NOTE segment found in {}, exiting."
     print(MSG.format(sys.argv[1]), file=sys.stderr)
     sys.exit(2)
 

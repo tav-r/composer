@@ -6,6 +6,6 @@ ELF_HANDLER = Extension('elf_handler',
               include_dirs=["./"])
 
 setup (name = 'elf_handler',
-       version = '1.0',
-       description = 'This is a demo package',
+       version = '0.1',
+       description = 'A package to make the manipulation of ELF files easier',
        ext_modules = [ELF_HANDLER])
