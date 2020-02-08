@@ -4,8 +4,13 @@ way on a low level.
 """
 
 from abc import ABC, abstractmethod
+import functools
 import os
 import elf_handler
+
+
+EI_NIDENT = 16
+
 
 E_HEADER_MEMBERS = {
     "e_type", "e_machine", "e_version", "e_entry",
@@ -33,8 +38,13 @@ class ELFFile:
     Changes to this object will be written directly to the file so
     be careful!
     """
-    def __init__(self, path):
+    def __init__(self, path, force=False):
         self.__path = path
+
+        if not self.header.e_ident[0:4] == b"\x7ELF" and not force:
+            msg = "The given file is not an ELF file (set optional argument "\
+                  "'force=True' to force loading)"
+            raise IOError(msg)
 
     @property
     def header(self):
@@ -115,9 +125,35 @@ class Header(ABC):
     def _members(self):
         raise NotImplementedError()
 
+class EIdent:
+    """Represents an e_ident entry in the ELF file header."""
+
+    def __init__(self, path):
+        self._path = path
+
+    def __getitem__(self, index):
+        return elf_handler.read_elf_header_e_ident(self._path)[index]
+
+    def __setitem__(self, index, value):
+        e_ident = elf_handler.read_elf_header_e_ident(self._path)
+        e_ident[index] = value
+        elf_handler.write_elf_header_e_ident(self._path, e_ident)
+
+    def __len__(self):
+        return EI_NIDENT
+
+    def __iter__(self):
+        for byte in self[0:EI_NIDENT]:
+            yield byte
+
 
 class ELFHeader(Header):
     """An ELF file header"""
+
+    @property
+    def e_ident(self):
+        """e_ident member of ELF program header."""
+        return EIdent(self._path)
 
     def _read(self, name):
         return elf_handler.read_elf_header(self._path, name)

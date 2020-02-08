@@ -218,6 +218,46 @@ fail:
 }
 
 static PyObject*
+read_elf_header_e_ident(PyObject* self, PyObject *args)
+{
+    Elf64_Ehdr *hdr;
+    char *path;
+
+    if (!PyArg_ParseTuple(args, "s", &path)) goto fail;
+    if ((hdr = read_ehdr_data(path)) == NULL) {
+        goto fail;
+    }
+
+    return PyByteArray_FromStringAndSize((char *) hdr->e_ident, EI_NIDENT);
+
+fail:
+    return NULL;
+}
+
+static PyObject*
+write_elf_header_e_ident(PyObject* self, PyObject *args)
+{
+    Elf64_Ehdr *hdr;
+    const char *path;
+    PyObject* e_ident_bytearray;
+
+    if (!PyArg_ParseTuple(args, "sY", &path, &e_ident_bytearray)) goto fail;
+    if ((hdr = read_ehdr_data(path)) == NULL) {
+        goto fail;
+    }
+
+    memcpy(hdr->e_ident, PyByteArray_AsString(e_ident_bytearray), EI_NIDENT);
+
+    if (write_to_file(path, 0, hdr, sizeof(Elf64_Ehdr)) == -1) goto fail;
+    PyByteArray_FromStringAndSize((char *) hdr->e_ident, EI_NIDENT);
+
+    return Py_None;
+
+fail:
+    return NULL;
+}
+
+static PyObject*
 read_elf_header(PyObject* self, PyObject *args) {
     const char *path, *member;	
     Elf64_Ehdr *hdr;
@@ -594,6 +634,15 @@ fail:
 }
 
 static PyMethodDef ElfHandlerMethods[] = {
+    {"read_elf_header_e_ident", read_elf_header_e_ident, 
+     METH_VARARGS,
+            "Args:\n"
+            "    file_path (string): path to ELF file\n"},
+    {"write_elf_header_e_ident", write_elf_header_e_ident, 
+     METH_VARARGS,
+            "Args:\n"
+            "    file_path (string): path to ELF file\n"
+            "    new_e_ident (bytearray): new e_ident data"},
     {"read_elf_header", read_elf_header, 
      METH_VARARGS,
             "Args:\n"
