@@ -2,6 +2,7 @@ bin/
 lib/
 lib64
 include/
+test*.py
 pyvenv.cfg
 __pycache__/
 build/

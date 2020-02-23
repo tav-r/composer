@@ -1,5 +1,5 @@
 /*TODO
- * - Handle symbols, string tables, relocs and so on
+ * - Handle relocs
  */
 
 
@@ -17,7 +17,7 @@
  * read 'length' bytes from file at 'path' at 'offset'. Returns NULL if an error occured.
  */
 void*
-read_n_at(const char *path, long offset, size_t length) {
+read_n_at(const char *path, size_t offset, size_t length) {
     FILE *elff;
     void *buf;
     size_t ret;
@@ -145,6 +145,62 @@ checked_read_shdr_data(char *path, int index)
     }
 
     return shdr;
+
+fail:
+    return NULL;
+}
+
+/**
+ * Get offset of symbol number 'symnr' in section at index 'sindex' in ELF file
+ * at 'path'.
+ */
+ssize_t 
+get_sym_offset(char *path, unsigned int sindex, unsigned int symnr)
+{
+    Elf64_Shdr *shdr;
+    ssize_t j, offset;
+
+    if ((shdr = checked_read_shdr_data(path, sindex)) == NULL) goto fail;
+
+    if (shdr->sh_type != SHT_SYMTAB && shdr->sh_type != SHT_DYNSYM) {
+        PyErr_SetString(PyExc_ValueError, "This section does not hold a symbol table");
+        goto fail;
+    }
+
+    if (shdr->sh_size / shdr->sh_entsize <= symnr || symnr < 0) {
+        PyErr_SetString(PyExc_IndexError, "Wrong symbol table index.");
+        goto parse_fail;
+    }
+
+    for (j = 0; j / shdr->sh_entsize < symnr; j += shdr->sh_entsize);
+    offset = shdr->sh_offset + j;
+
+    free(shdr);
+
+    return offset;
+
+parse_fail:
+    free(shdr);
+fail:
+    return -1;
+}
+
+/**
+ * Symbol number 'symnr' in section with index 'sindex' for file at 'path'.
+ * This function checks for illegal 'sindex', 'symnr' and that section is of
+ * type SHT_SYMTAB.
+ */
+Elf64_Sym*
+checked_read_sym_data(char *path, unsigned int sindex, unsigned int symnr)
+{
+    Elf64_Sym *sym;
+    ssize_t offset;
+
+    if ((offset = get_sym_offset(path, sindex, symnr)) == -1) goto fail;
+
+    if ((sym = (Elf64_Sym*) read_n_at(path, offset, sizeof(Elf64_Sym))) == NULL) goto fail;
+    
+    return sym;
 
 fail:
     return NULL;
@@ -583,7 +639,6 @@ fail:
     return NULL;
 }
 
-
 static PyObject*
 write_program_header(PyObject* self, PyObject* args)
 {
@@ -633,6 +688,96 @@ fail:
     return NULL;
 }
 
+PyObject*
+read_elf_symbol(PyObject *self, PyObject *args)
+{
+    long res;
+    Elf64_Sym *sym;
+    char *path, *member;
+    int sec_index, symnr;
+
+    if (!PyArg_ParseTuple(args, "ssii", &path, &member, &sec_index, &symnr)) {
+        return NULL;
+    }
+
+    if ((sym = checked_read_sym_data(path, sec_index, symnr)) == NULL) {
+        goto fail;
+    }
+
+    if (strcmp("st_name", member) == 0) {
+        res = sym->st_name;
+    } else if (strcmp("st_info", member) == 0) {
+        res = sym->st_info;
+    } else if (strcmp("st_other", member) == 0) {
+        res = sym->st_other;
+    } else if (strcmp("st_shndx", member) == 0) {
+        res = sym->st_shndx;
+    } else if (strcmp("st_value", member) == 0) {
+        res = sym->st_value;
+    } else if (strcmp("st_size", member) == 0) {
+        res = sym->st_size;
+    } else {
+        PyErr_SetString(PyExc_AttributeError, "ELF program header does not have a member with this name");
+        goto read_fail;
+    }
+
+    free(sym);
+
+    return PyLong_FromLong(res);
+
+read_fail:
+    free(sym);
+fail:
+    return NULL;
+}
+
+PyObject*
+write_elf_symbol(PyObject *self, PyObject *args)
+{
+    long new_val, offset;
+    Elf64_Sym *sym;
+    char *path, *member;
+    int sec_index, symnr;
+
+    if (!PyArg_ParseTuple(args, "ssiil", &path, &member, &sec_index, &symnr, &new_val)) {
+        goto fail;
+    }
+
+    if ((sym = checked_read_sym_data(path, sec_index, symnr)) == NULL) {
+        goto fail;
+    }
+
+    if (strcmp("st_name", member) == 0) {
+        sym->st_name = (uint32_t) new_val;
+    } else if (strcmp("st_info", member) == 0) {
+        sym->st_info = (unsigned char) new_val;
+    } else if (strcmp("st_other", member) == 0) {
+        sym->st_other = (unsigned char) new_val;
+    } else if (strcmp("st_shndx", member) == 0) {
+        sym->st_shndx = (uint16_t) new_val;
+    } else if (strcmp("st_value", member) == 0) {
+        sym->st_value = (Elf64_Addr) new_val;
+    } else if (strcmp("st_size", member) == 0) {
+        sym->st_size = (uint64_t) new_val;
+    } else {
+        PyErr_SetString(PyExc_AttributeError, "ELF program header does not have a member with this name");
+        goto parse_fail;
+    }
+
+    if ((offset = get_sym_offset(path, sec_index, symnr)) == -1) goto write_fail;
+    if (write_to_file(path, offset, (void *) sym, sizeof(Elf64_Sym)) == -1) goto write_fail;
+
+    free(sym);
+
+    return Py_None;
+
+write_fail:
+parse_fail:
+    free(sym);
+fail:
+    return NULL;
+}
+
 static PyMethodDef ElfHandlerMethods[] = {
     {"read_elf_header_e_ident", read_elf_header_e_ident, 
      METH_VARARGS,
@@ -673,6 +818,21 @@ static PyMethodDef ElfHandlerMethods[] = {
             "    file_path (string): path to ELF file\n"
             "    member_name (string): Name of Elf64_Phdr member to read\n"
             "    index (int): index of program header in program header table\n"},
+    {"read_elf_symbol", read_elf_symbol, 
+     METH_VARARGS,
+    "Args:\n"
+            "    file_path (string): path to ELF file\n"
+            "    member_name (string): Name of Elf64_Shdr member to read\n"
+            "    sindex (int): index of section which hodls the symbol\n"
+            "    symnr (int): number of symbol in the symbol table\n"},
+    {"write_elf_symbol", write_elf_symbol, 
+     METH_VARARGS,
+    "Args:\n"
+            "    file_path (string): path to ELF file\n"
+            "    member_name (string): Name of Elf64_Shdr member to write\n"
+            "    sindex (int): index of section which holds the symbol\n"
+            "    symnr (int): number of symbol in the symbol table\n"
+            "    new_val (int): new value to write\n"},
     {"write_program_header", write_program_header, 
      METH_VARARGS, 
             "Args:\n"
