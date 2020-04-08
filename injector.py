@@ -43,5 +43,5 @@ SOME_NOTE_PHDR.p_vaddr = ADDR + (ELF_FILE.size % 0x1000) - (ADDR % 0x1000)
 SOME_NOTE_PHDR.p_filesz = SOME_NOTE_PHDR.p_memsz = len(CODE)  # shellcode size
 SOME_NOTE_PHDR.p_align = 0x1000  # align segment to pagesize
 
-ELF_FILE.insert_at(ELF_FILE.size, CODE)  # append code
+ELF_FILE.overwrite_at(ELF_FILE.size, CODE)  # append code
 ELF_FILE.header.e_entry = SOME_NOTE_PHDR.p_vaddr  # set entry to inserted code

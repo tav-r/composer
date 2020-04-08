@@ -10,7 +10,6 @@ import elf_handler
 SHT_SYMTAB = 2
 SHT_DYNSYM = 11
 EI_NIDENT = 16
-PT_DYNAMIC = 2
 
 
 E_HEADER_MEMBERS = {
@@ -91,7 +90,11 @@ class ELFFile:
             offset (int): file offset to write data at
             data (bytes): the data to write
         """
-        elf_handler.insert_bytes(self.__path, offset, data, overwrite=False)
+        with open(self.__path, "wb+") as elf_file:
+            elf_file.seek(offset)
+            rest = elf_file.read()
+            elf_file.seek(offset)
+            elf_file.write(data + rest)
 
     def overwrite_at(self, offset, data):
         """
@@ -103,7 +106,9 @@ class ELFFile:
             offset (int): file offset to write data at
             data (bytes): the data to write
         """
-        elf_handler.insert_bytes(self.__path, offset, data, overwrite=True)
+        with open(self.__path, "r+b") as elf_file:
+            elf_file.seek(offset)
+            elf_file.write(data)
 
     @property
     def size(self):
