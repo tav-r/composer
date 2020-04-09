@@ -1,5 +1,5 @@
 # composer
-This should become a collection of tools I wrote to tamper with ELF files.
+This is a collection of tools I'm writing to tamper with ELF files.
 
 ## What is it?
 The goal of this project is to provide python code, that makes the manipulation of ELF files easy. Currently it is possible to read and modify
@@ -52,7 +52,7 @@ I plan to add
 >>> SHT_DYNSYM = 11
 >>> holds_symbols = [s for s in e.sections if s.header.sh_type in [SHT_SYMTAB, SHT_DYNSYM]]
 >>> for sym in holds_symbols[0].symbols:
-...     print(sym)  # prints the name of the section using the .strtab and st_name
+...     print(sym)  # prints the name of the symbol using the .strtab and st_name
 ...
 
 
@@ -66,7 +66,7 @@ array_entry
 ## What is it good for?
 *composer* shall help to do different offensive and forensic tasks like reconstruction, instrumentation, and infection of ELF binaries.
 
-A very simple example is `injector.py` which hijacks the execution flow of an ELF file by appending some shellcode to the file, modifying a `PLT_NOTE` segment header and setting the entry point to the injected shellcode.
+A very simple example is [injector.py](injector.py) which hijacks the execution flow of an ELF file by appending some shellcode to the file, modifying a `PLT_NOTE` segment header and setting the entry point to the injected shellcode.
 
 [![asciicast](https://asciinema.org/a/u5l3rqWWZihe3irHYSzJR8S50.svg)](https://asciinema.org/a/u5l3rqWWZihe3irHYSzJR8S50)
 
