@@ -2,7 +2,6 @@
  * - Handle relocs
  */
 
-
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <errno.h>
@@ -13,7 +12,6 @@
 #include <assert.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
 
 uint8_t*
 map_file(int *const fd, const char *path, const int PROT) {
@@ -70,8 +68,6 @@ write_elf_header_e_ident(PyObject* self, PyObject *args)
 fail:
     return NULL;
 }
-
-
 
 static PyObject*
 read_elf_header(PyObject* self, PyObject *args) {
