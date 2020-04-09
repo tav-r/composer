@@ -13,16 +13,40 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+typedef enum {
+    READONLY,
+    READWRITE
+} access_mode;
+
 uint8_t*
-map_file(int *const fd, const char *path, const int PROT) {
+map_file(int *const fd, const char *path, const access_mode MODE) {
     uint8_t *mmf;
-
     struct stat st;
+    int OPENMODE, MAP_MODE;
 
-    if ((*fd = open(path, O_RDWR)) < 0) goto fail;
-    if ((fstat(*fd, &st)) < 0) goto read_fail;
+    switch (MODE) {
+        case READONLY:
+            OPENMODE = O_RDONLY;
+            MAP_MODE = PROT_READ;
+            break;
+        case READWRITE:
+            OPENMODE = O_RDWR;
+            MAP_MODE = PROT_READ | PROT_WRITE;
+            break;
+        default:
+            return NULL;
+    }
 
-    mmf = mmap(NULL, st.st_size, PROT, MAP_SHARED, *fd, 0);
+    if ((*fd = open(path, OPENMODE)) < 0) {
+        PyErr_SetFromErrno(PyExc_OSError);
+        goto fail;
+    }
+    if ((fstat(*fd, &st)) < 0) {
+        PyErr_SetFromErrno(PyExc_OSError);
+        goto read_fail;
+    }
+
+    mmf = mmap(NULL, st.st_size, MAP_MODE, MAP_SHARED, *fd, 0);
     if (mmf == MAP_FAILED) goto read_fail;
 
     return mmf;
@@ -39,9 +63,10 @@ read_elf_header_e_ident(PyObject* self, PyObject *args)
     Elf64_Ehdr *hdr;
     char *path;
     int fd;
+    access_mode mode = READONLY;
 
     if (!PyArg_ParseTuple(args, "s", &path)) goto fail;
-    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, PROT_READ)) == NULL) goto fail;
+    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, mode)) == NULL) goto fail;
 
     return PyByteArray_FromStringAndSize((char *) hdr->e_ident, EI_NIDENT);
 
@@ -56,10 +81,11 @@ write_elf_header_e_ident(PyObject* self, PyObject *args)
     const char *path;
     PyObject* e_ident_bytearray;
     int fd;
+    access_mode mode = READWRITE;
 
     if (!PyArg_ParseTuple(args, "sY", &path, &e_ident_bytearray)) goto fail;
 
-    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, PROT_READ | PROT_WRITE)) == NULL) goto fail;
+    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, mode)) == NULL) goto fail;
 
     memcpy(hdr->e_ident, PyByteArray_AsString(e_ident_bytearray), EI_NIDENT);
 
@@ -75,10 +101,11 @@ read_elf_header(PyObject* self, PyObject *args) {
     const char *path, *member;	
     long ret;
     int fd;
+    access_mode mode = READONLY;
 
     if (!PyArg_ParseTuple(args, "ss", &path, &member)) return NULL;
 
-    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, PROT_READ)) == NULL) goto fail;
+    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, mode)) == NULL) goto fail;
 
     if (strcmp("e_type", member) == 0) {
         ret = hdr->e_type;
@@ -127,10 +154,11 @@ write_elf_header(PyObject* self, PyObject *args) {
     const long data;
     Elf64_Ehdr *hdr;
     int fd;
+    access_mode mode = READWRITE;
 
     if (!PyArg_ParseTuple(args, "ssl", &path, &member, &data)) return NULL;
 
-    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, PROT_READ | PROT_WRITE)) == NULL) goto fail;
+    if ((hdr = (Elf64_Ehdr*) map_file(&fd, path, mode)) == NULL) goto fail;
 
     if (strcmp("e_type", member) == 0) {
         hdr->e_type = (uint16_t) data;
@@ -183,12 +211,13 @@ read_section_header(PyObject* self, PyObject* args)
     uint8_t *mmf;
     char* path, * member;
     int index, fd;
+    access_mode mode = READONLY;
 
     if (!PyArg_ParseTuple(args, "ssi", &path, &member, &index)) {
         return NULL;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     shdr = (Elf64_Shdr*) &mmf[hdr->e_shoff + index * hdr->e_shentsize];
 
@@ -236,12 +265,13 @@ write_section_header(PyObject *self, PyObject *args)
     char *path, *member;
     int index, fd;
     long data;
+    access_mode mode = READWRITE;
 
     if (!PyArg_ParseTuple(args, "ssil", &path, &member, &index, &data)) {
         goto fail;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ | PROT_WRITE)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     shdr = (Elf64_Shdr*) &mmf[hdr->e_shoff + index * hdr->e_shentsize];
 
@@ -289,12 +319,13 @@ read_program_header(PyObject* self, PyObject* args)
     uint8_t *mmf;
     char *path, *member;
     int index, fd;
+    access_mode mode = READONLY;
 
     if (!PyArg_ParseTuple(args, "ssi", &path, &member, &index)) {
         return NULL;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     phdr = (Elf64_Phdr*) &mmf[hdr->e_phoff + index * hdr->e_phentsize];
 
@@ -338,12 +369,13 @@ write_program_header(PyObject* self, PyObject* args)
     char* path, *member;
     int index, fd;
     long data;
+    access_mode mode = READWRITE;
 
     if (!PyArg_ParseTuple(args, "ssil", &path, &member, &index, &data)) {
         goto fail;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ | PROT_WRITE)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     phdr = (Elf64_Phdr*) &mmf[hdr->e_phoff + index * hdr->e_phentsize];
 
@@ -386,12 +418,13 @@ read_elf_symbol(PyObject *self, PyObject *args)
     uint8_t *mmf;
     char *path, *member;
     int index, symnr, fd;
+    access_mode mode = READONLY;
 
     if (!PyArg_ParseTuple(args, "ssii", &path, &member, &index, &symnr)) {
         return NULL;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     shdr = (Elf64_Shdr*) &mmf[hdr->e_shoff + index * hdr->e_shentsize];
 
@@ -439,12 +472,13 @@ write_elf_symbol(PyObject *self, PyObject *args)
     uint8_t *mmf;
     char *path, *member;
     int index, symnr, fd;
+    access_mode mode = READWRITE;
 
     if (!PyArg_ParseTuple(args, "ssiil", &path, &member, &index, &symnr, &new_val)) {
         goto fail;
     }
 
-    if ((mmf = map_file(&fd, path, PROT_READ | PROT_WRITE)) == NULL) goto fail;
+    if ((mmf = map_file(&fd, path, mode)) == NULL) goto fail;
     hdr = (Elf64_Ehdr*) mmf;
     shdr = (Elf64_Shdr*) &mmf[hdr->e_shoff + index * hdr->e_shentsize];
 
