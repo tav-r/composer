@@ -52,7 +52,7 @@ I plan to add
 >>> SHT_DYNSYM = 11
 >>> holds_symbols = [s for s in e.sections if s.header.sh_type in [SHT_SYMTAB, SHT_DYNSYM]]
 >>> for sym in holds_symbols[0].symbols:
-...     print(sym)  # prints the name of the section using the .strtab and st_name
+...     print(sym)  # prints the name of the symbol using the .strtab and st_name
 ...
 
 
