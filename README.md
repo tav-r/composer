@@ -1,5 +1,5 @@
 # composer
-This should become a collection of tools I wrote to tamper with ELF files.
+This is a collection of tools I'm writing to tamper with ELF files.
 
 ## What is it?
 The goal of this project is to provide python code, that makes the manipulation of ELF files easy. Currently it is possible to read and modify
