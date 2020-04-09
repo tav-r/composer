@@ -1,11 +1,11 @@
 """
-Should provide the tools to modify ELF executables in a comfortable
+Provides abstraction to modify ELF executables in a comfortable
 way on a low level.
 """
 
+import os
 from abc import ABC, abstractmethod
 import elf_handler
-import os
 
 SHT_SYMTAB = 2
 SHT_DYNSYM = 11
@@ -45,7 +45,8 @@ class ELFFile:
     def __init__(self, path, force=False):
         self.__path = path
 
-        if not self.header.e_ident[0:4] != bytearray(b"\x7ELF") and not force:
+        print(self.header.e_ident[0:4])
+        if not self.header.e_ident[0:4] == bytearray(b"\x7fELF") and not force:
             msg = "The given file is not an ELF file (set optional argument "\
                   "'force=True' to force loading)"
             raise IOError(msg)
@@ -147,7 +148,7 @@ class EIdent:
         return EI_NIDENT
 
     def __iter__(self):
-        for byte in self[0:EI_NIDENT]:
+        for byte in self[:EI_NIDENT]:
             yield byte
 
 
