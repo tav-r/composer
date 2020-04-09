@@ -428,7 +428,7 @@ read_elf_symbol(PyObject *self, PyObject *args)
     hdr = (Elf64_Ehdr*) mmf;
     shdr = (Elf64_Shdr*) &mmf[hdr->e_shoff + index * hdr->e_shentsize];
 
-    if (shdr->sh_type != SHT_SYMTAB && shdr->sh_type != SHT_SYMTAB) {
+    if (shdr->sh_type != SHT_SYMTAB && shdr->sh_type != SHT_DYNSYM) {
         PyErr_SetString(PyExc_OSError, "The given section does not contain symbols according to its type");
         goto read_fail;
     }
