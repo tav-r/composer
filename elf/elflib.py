@@ -4,8 +4,8 @@ way on a low level.
 """
 
 from abc import ABC, abstractmethod
-import os
 import elf_handler
+import os
 
 SHT_SYMTAB = 2
 SHT_DYNSYM = 11
