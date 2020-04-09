@@ -7,7 +7,9 @@ The goal of this project is to provide python code, that makes the manipulation 
 - section header members
 - program header members
 - symbols in sections
+
 I plan to add
+
 - handling/modification of relocation entries
 - some higher-level functionality like reconstruction section headers and different code injection techniques
 - handling loaded elf files (i.e. reading elf-files from memory)
