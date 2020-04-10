@@ -2,7 +2,7 @@
 This is a collection of tools I'm writing to tamper with ELF files.
 
 ## What is it?
-The goal of this project is to provide python code, that makes the manipulation of ELF files easy. Currently it is possible to read and modify
+The goal of this project is to provide python code that makes the manipulation of ELF files easy. Currently it is possible to read and modify
 - ELF header members
 - section header members
 - program header members
