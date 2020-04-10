@@ -6,7 +6,7 @@ ELF_HANDLER = Extension('composer_extensions.elf_handler',
 
 PTRACE_WRAPPER = Extension('composer_extensions.ptrace_wrapper',
                            extra_compile_args=['-Werror', '-Wpedantic'],
-                           sources=['ptrace/ptrace_wrapper.c'])
+                           sources=['process/ptrace_wrapper.c'])
 
 setup(name='composer',
       version='0.1',
