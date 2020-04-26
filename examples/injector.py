@@ -5,7 +5,7 @@ trick.
 """
 
 import sys
-import elf
+from composer import elf
 
 PT_NOTE = 4
 PT_LOAD = 1
