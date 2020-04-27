@@ -11,5 +11,5 @@ PTRACE_WRAPPER = Extension('composer.extensions.ptrace_wrapper',
 setup(name='composer',
       version='0.1',
       description='A package to make the manipulation of ELF files easier',
-      packages=['composer', 'composer.elf', 'composer.process'],
+      packages=['composer', 'composer.process', 'composer.elf'],
       ext_modules=[ELF_HANDLER, PTRACE_WRAPPER])
