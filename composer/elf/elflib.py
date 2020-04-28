@@ -5,7 +5,7 @@ way on a low level.
 
 import os
 from abc import ABC, abstractmethod
-from composer.extensions import elf_handler
+from composer_extensions import elf_handler
 
 SHT_SYMTAB = 2
 SHT_DYNSYM = 11
