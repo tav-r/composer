@@ -66,7 +66,7 @@ array_entry
 ## What is it good for?
 *composer* shall help to do different offensive and forensic tasks like reconstruction, instrumentation, and infection of ELF binaries.
 
-A very simple example is [injector.py](examples/injector.py) which hijacks the execution flow of an ELF file by appending some shellcode to the file, modifying a `PLT_NOTE` segment header and setting the entry point to the injected shellcode.
+A very simple example is [PT_NOTE_injector.py](examples/PT_NOTE_injector.py) which hijacks the execution flow of an ELF file by appending some shellcode to the file, modifying a `PLT_NOTE` segment header and setting the entry point to the injected shellcode.
 
 [![asciicast](https://asciinema.org/a/u5l3rqWWZihe3irHYSzJR8S50.svg)](https://asciinema.org/a/u5l3rqWWZihe3irHYSzJR8S50)
 
