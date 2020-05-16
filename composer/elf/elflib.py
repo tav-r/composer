@@ -284,7 +284,9 @@ class Section:
             IOError if section is not of type SHT_SYMTAB
         """
         if self._header.sh_type not in [SHT_SYMTAB, SHT_DYNSYM]:
-            raise IOError("This section does not have type SHT_SYMTAB")
+            errror_msg = "This section does not have "\
+                         "type SHT_SYMTAB or SHT_DYNSYM"
+            raise IOError(error_msg)
 
         syms = []
         for i, _ in enumerate(range(0, self.header.sh_size,
