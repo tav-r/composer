@@ -45,7 +45,6 @@ class ELFFile:
     def __init__(self, path, force=False):
         self.__path = path
 
-        print(self.header.e_ident[0:4])
         if not self.header.e_ident[0:4] == bytearray(b"\x7fELF") and not force:
             msg = "The given file is not an ELF file (set optional argument "\
                   "'force=True' to force loading)"
@@ -91,7 +90,7 @@ class ELFFile:
             offset (int): file offset to write data at
             data (bytes): the data to write
         """
-        with open(self.__path, "wb+") as elf_file:
+        with open(self.__path, "rb+") as elf_file:
             elf_file.seek(offset)
             rest = elf_file.read()
             elf_file.seek(offset)
